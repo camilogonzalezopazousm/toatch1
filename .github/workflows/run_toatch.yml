@@ -2,7 +2,7 @@ name: Ejecutar TOATCH1609 y Enviar por Correo
 
 on:
   schedule:
-    - cron: '30 16 * * *'  # 13:30 hora Chile (UTC-3 → 16:30 UTC)
+    - cron: '40 16 * * *'  # 13:30 hora Chile (UTC-3 → 16:30 UTC)
 
 jobs:
   run-script:
