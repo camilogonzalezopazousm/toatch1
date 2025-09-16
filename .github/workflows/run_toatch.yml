@@ -1,1 +1,27 @@
+name: Ejecutar TOATCH1609 y Enviar por Correo
+
+on:
+  schedule:
+    - cron: '30 16 * * *'  # 13:30 hora Chile (UTC-3 → 16:30 UTC)
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    env:
+      OUTLOOK_PASS: ${{ secrets.OUTLOOK_PASS }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Ejecutar TOATCH1609.py
+        run: python TOATCH1609.py
 
