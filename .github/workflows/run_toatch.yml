@@ -26,6 +26,6 @@ jobs:
           USUARIO_PORTAL: ${{ secrets.USUARIO_PORTAL }}
           PASS_PORTAL: ${{ secrets.PASS_PORTAL }}
           OUTLOOK_PASS: ${{ secrets.OUTLOOK_PASS }}
-        run: python toatch1609.py
+        run: python TOATCH1609.py
 
 
