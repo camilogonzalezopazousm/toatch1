@@ -1,112 +1,75 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[ ]:
-
-
+from playwright.sync_api import sync_playwright
+from datetime import datetime, timedelta
 import os
 import time
-import smtplib
-import ssl
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.mime.base import MIMEBase
-from email import encoders
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.common.exceptions import TimeoutException, StaleElementReferenceException
-from webdriver_manager.chrome import ChromeDriverManager
 
-# ---------- CONFIGURACIÓN ----------
-PORTAL_URL = "https://ejemplo.com/login"  # ⚠️ cambia al portal real
-USUARIO_PORTAL = os.environ.get("USUARIO_PORTAL")
-PASS_PORTAL = os.environ.get("PASS_PORTAL")
+# ----- Credenciales y URL -----
+URL = "https://telefonica-cl.etadirect.com/"
+USUARIO = os.getenv("USUARIO_PORTAL", "22090589")
+CONTRASENA = os.getenv("PASS_PORTAL", "Joaquin2012@")
 
-REMITENTE = "selfgeneratedcamilogonzalez@gmail.com"
-DESTINATARIO = "cgonzalezo@lari.cl"
-CLAVE_APP = os.environ.get("GMAIL_APP_PASS")
 
-DOWNLOAD_FOLDER = os.environ.get("DOWNLOAD_FOLDER", "/github/home")
+def run(playwright):
+    browser = playwright.chromium.launch(headless=True)
+    context = browser.new_context(accept_downloads=True)
+    page = context.new_page()
 
-# ---------- FUNCIONES ----------
-def esperar_elemento(driver, by, selector, tiempo=30, click=False):
-    """Espera un elemento de forma robusta, lo devuelve o hace click."""
-    for _ in range(3):  # reintenta si es stale
-        try:
-            elem = WebDriverWait(driver, tiempo).until(
-                EC.presence_of_element_located((by, selector))
-            )
-            if click:
-                driver.execute_script("arguments[0].click();", elem)
-                return True
-            return elem
-        except (TimeoutException, StaleElementReferenceException):
-            time.sleep(2)
-    return None
+    print("1. Accediendo a la página...")
+    page.goto(URL)
 
-def enviar_correo(archivo):
-    mensaje = MIMEMultipart()
-    mensaje["From"] = REMITENTE
-    mensaje["To"] = DESTINATARIO
-    mensaje["Subject"] = "Archivo Automático"
+    # LOGIN
+    print("2. Ingreso de usuario y contraseña...")
+    page.fill("xpath=//input[@placeholder='Nombre de usuario']", USUARIO)
+    page.fill("xpath=//input[@placeholder='Contraseña']", CONTRASENA)
+    page.keyboard.press("Enter")
 
-    cuerpo = MIMEText("Adjunto el archivo descargado automáticamente.", "plain")
-    mensaje.attach(cuerpo)
+    # Manejo de alerta de sesión activa
+    try:
+        page.wait_for_selector("#delsession", timeout=3000)
+        print("✅ Checkbox de sesión activa detectado.")
+        page.check("#delsession")
 
-    with open(archivo, "rb") as adj:
-        parte = MIMEBase("application", "octet-stream")
-        parte.set_payload(adj.read())
-        encoders.encode_base64(parte)
-        parte.add_header("Content-Disposition", f"attachment; filename={os.path.basename(archivo)}")
-        mensaje.attach(parte)
+        page.fill("xpath=//input[@placeholder='Nombre de usuario']", USUARIO)
+        page.fill("xpath=//input[@placeholder='Contraseña']", CONTRASENA)
+        page.keyboard.press("Enter")
+        print("🔄 Reingreso de credenciales tras alerta.")
+    except:
+        print("No se detectó alerta de sesión. Continuando...")
 
-    contexto = ssl.create_default_context()
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=contexto) as server:
-        server.login(REMITENTE, CLAVE_APP)
-        server.sendmail(REMITENTE, DESTINATARIO, mensaje.as_string())
+    # Esperar carga post login
+    page.wait_for_selector("xpath=//button[contains(., 'Vista')]")
+    print("Login exitoso.")
 
-# ---------- MAIN ----------
-options = webdriver.ChromeOptions()
-options.add_argument("--headless=new")
-options.add_argument("--no-sandbox")
-options.add_argument("--disable-dev-shm-usage")
-options.add_argument(f"--user-data-dir={os.path.join(DOWNLOAD_FOLDER, 'profile')}")
-options.add_experimental_option("prefs", {
-    "download.default_directory": DOWNLOAD_FOLDER,
-    "download.prompt_for_download": False,
-    "download.directory_upgrade": True,
-    "safebrowsing.enabled": True
-})
+    # ABRIR CALENDARIO
+    fecha_hoy = datetime.now().strftime("%Y/%m/%d")
+    page.click(f"xpath=//*[contains(text(), '{fecha_hoy}')]")
 
-driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
+    ayer = datetime.now() - timedelta(days=1)
+    dia_anterior = str(ayer.day)
+    print(f"Buscando día anterior: {dia_anterior}...")
 
-try:
-    driver.get(PORTAL_URL)
+    page.click(
+        f"xpath=//table[contains(@class,'ui-datepicker-calendar')]"
+        f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
+    )
+    print("Día anterior seleccionado.")
 
-    # ---- LOGIN ----
-    user_box = esperar_elemento(driver, By.ID, "usuario")  # ⚠️ ajusta selector
-    pass_box = esperar_elemento(driver, By.ID, "password") # ⚠️ ajusta selector
-    if user_box and pass_box:
-        user_box.send_keys(USUARIO_PORTAL)
-        pass_box.send_keys(PASS_PORTAL)
-        login_btn = esperar_elemento(driver, By.ID, "loginBtn", click=True)  # ⚠️ ajusta selector
-    else:
-        raise Exception("No se encontró formulario de login")
+    # Abrir Vista
+    page.click("xpath=//button[contains(., 'Vista')]")
+    page.check("xpath=//label[contains(normalize-space(.), 'Todos los datos de hijos')]/input")
+    page.click("xpath=//button[contains(., 'Aplicar')]")
+    print("Casilla marcada y aplicada.")
 
-    # ---- NAVEGACIÓN Y DESCARGA ----
-    boton_descarga = esperar_elemento(driver, By.ID, "btnDescargar", click=True)  # ⚠️ ajusta selector
-    time.sleep(15)  # espera descarga
+    # Exportar datos
+    page.click("xpath=//button[contains(., 'Acciones')]")
+    with page.expect_download() as download_info:
+        page.click("xpath=//button[contains(., 'Exportar')]")
+    download = download_info.value
+    download.save_as("exportado.xlsx")
+    print("✅ Datos exportados exitosamente.")
 
-    # ---- BUSCAR ARCHIVO ----
-    list_of_files = [os.path.join(DOWNLOAD_FOLDER, f) for f in os.listdir(DOWNLOAD_FOLDER)]
-    latest_file = max(list_of_files, key=os.path.getmtime)
+    browser.close()
 
-    # ---- ENVIAR POR CORREO ----
-    enviar_correo(latest_file)
 
-finally:
-    driver.quit()
-
+with sync_playwright() as playwright:
+    run(playwright)
