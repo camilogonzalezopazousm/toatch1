@@ -94,10 +94,9 @@ def run(playwright):
     # Aplicar
     try:
         aplicar_btn = page.locator(
-            "//button[normalize-space()='Aplicar' or contains(normalize-space(.),'Aplicar')]"
-        )aplicar_btn = page.locator(
     "//button[normalize-space()='Aplicar' or contains(normalize-space(.),'Aplicar')]"
 )
+
 
         aplicar_btn.click(timeout=3000)
         print("✅ Cambios aplicados.")
