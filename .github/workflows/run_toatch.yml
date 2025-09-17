@@ -1,9 +1,6 @@
 name: Run TOATCH1609 Daily
 
-on:
-  schedule:
-    - cron: '0 7 * * *' # 04:00 hora Chile (UTC-3, por eso 07:00 UTC)
-  workflow_dispatch: # permite ejecutar manualmente desde GitHub
+
 
 jobs:
   run-script:
