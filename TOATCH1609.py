@@ -1,7 +1,6 @@
 from playwright.sync_api import sync_playwright
 from datetime import datetime, timedelta
 import os
-import time
 
 # ----- Credenciales y URL -----
 URL = "https://telefonica-cl.etadirect.com/"
@@ -66,22 +65,21 @@ def run(playwright):
     # Función robusta para marcar la casilla
     def try_click_label():
         try:
-            # Intentar click normal
             label.click(timeout=5000)
             return True
         except:
             pass
         try:
-            # Intentar click forzado con JS
             label.evaluate("el => el.click()")
             return True
         except:
             pass
         try:
-            # Intentar buscar el input y forzar el check
             checkbox = label.locator(".//input[@type='checkbox']")
             if checkbox.count() > 0:
-                checkbox.evaluate("el => { el.checked = true; el.dispatchEvent(new Event('change', {bubbles:true})); }")
+                checkbox.evaluate(
+                    "el => { el.checked = true; el.dispatchEvent(new Event('change', {bubbles:true})); }"
+                )
                 return True
         except:
             pass
@@ -95,4 +93,28 @@ def run(playwright):
 
     # Aplicar
     try:
-        aplicar_btn = page.locator("//button[normalize-space()='Aplicar' or]()_
+        aplicar_btn = page.locator(
+            "//button[normalize-space()='Aplicar' or contains(normalize-space(.),'Aplicar')]"
+        )
+        aplicar_btn.click(timeout=3000)
+        print("✅ Cambios aplicados.")
+    except:
+        print("⚠️ No se pudo hacer clic en 'Aplicar'. Revisa manualmente.")
+
+    # -----------------------------
+    # Exportar datos
+    # -----------------------------
+    print("6️⃣ Abriendo 'Acciones' y exportando...")
+    page.click("xpath=//button[contains(., 'Acciones')]")
+
+    with page.expect_download() as download_info:
+        page.click("xpath=//button[contains(., 'Exportar')]")
+    download = download_info.value
+    download.save_as("exportado.xlsx")
+    print("✅ Datos exportados exitosamente.")
+
+    browser.close()
+
+
+with sync_playwright() as playwright:
+    run(playwright)
