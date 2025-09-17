@@ -27,7 +27,7 @@ jobs:
         env:
           USUARIO_PORTAL: ${{ secrets.USUARIO_PORTAL }}
           PASS_PORTAL: ${{ secrets.PASS_PORTAL }}
-        run: python script_playwright.py
+        run: python TOATCH1609.py
 
       - name: Guardar exportado como artifact
         uses: actions/upload-artifact@v4
