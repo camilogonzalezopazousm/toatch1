@@ -54,22 +54,45 @@ def run(playwright):
     )
     print("Día anterior seleccionado.")
 
-    # Abrir Vista
+    # -----------------------------
+    # ABRIR "Vista" y marcar casilla
+    # -----------------------------
+    print("5. Abriendo 'Vista' y seleccionando opción...")
     page.click("xpath=//button[contains(., 'Vista')]")
-    page.check("xpath=//label[contains(normalize-space(.), 'Todos los datos de hijos')]/input")
-    page.click("xpath=//button[contains(., 'Aplicar')]")
-    print("Casilla marcada y aplicada.")
 
-    # Exportar datos
-    page.click("xpath=//button[contains(., 'Acciones')]")
-    with page.expect_download() as download_info:
-        page.click("xpath=//button[contains(., 'Exportar')]")
-    download = download_info.value
-    download.save_as("exportado.xlsx")
-    print("✅ Datos exportados exitosamente.")
+    label_xpath = "//label[contains(normalize-space(.), 'Todos los datos de hijos')]"
+    label = page.locator(label_xpath)
 
-    browser.close()
+    # Función robusta para marcar la casilla
+    def try_click_label():
+        try:
+            # Intentar click normal
+            label.click(timeout=5000)
+            return True
+        except:
+            pass
+        try:
+            # Intentar click forzado con JS
+            label.evaluate("el => el.click()")
+            return True
+        except:
+            pass
+        try:
+            # Intentar buscar el input y forzar el check
+            checkbox = label.locator(".//input[@type='checkbox']")
+            if checkbox.count() > 0:
+                checkbox.evaluate("el => { el.checked = true; el.dispatchEvent(new Event('change', {bubbles:true})); }")
+                return True
+        except:
+            pass
+        return False
 
+    ok = try_click_label()
+    if not ok:
+        print("⚠️ No pude marcar la casilla, revisa si está en un shadow DOM.")
+    else:
+        print("✅ Casilla marcada.")
 
-with sync_playwright() as playwright:
-    run(playwright)
+    # Aplicar
+    try:
+        aplicar_btn = page.locator("//button[normalize-space()='Aplicar' or]()_
