@@ -1,1 +1,37 @@
+name: Exportar Datos
+
+on:
+  workflow_dispatch:  # ejecución manual
+  schedule:
+    - cron: "0 7 * * *"  # todos los días a las 7am UTC
+
+jobs:
+  exportar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Instalar dependencias
+        run: |
+          pip install playwright
+          playwright install chromium
+
+      - name: Ejecutar script
+        env:
+          USUARIO_PORTAL: ${{ secrets.USUARIO_PORTAL }}
+          PASS_PORTAL: ${{ secrets.PASS_PORTAL }}
+        run: python script_playwright.py
+
+      - name: Guardar exportado como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: datos-exportados
+          path: exportado.xlsx
 
