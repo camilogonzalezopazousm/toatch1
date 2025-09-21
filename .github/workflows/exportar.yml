@@ -3,7 +3,7 @@ name: Exportar Datos
 on:
   workflow_dispatch:  # ejecución manual
   schedule:
-    - cron: "0 7 * * *"  # todos los días a las 7am UTC
+    - cron: "0 8 * * *"  # todos los días a las 08:00 UTC (05:00 Chile UTC-3)
 
 jobs:
   exportar:
@@ -29,11 +29,17 @@ jobs:
           PASS_PORTAL: ${{ secrets.PASS_PORTAL }}
         run: python TOATCH1609.py
 
+      - name: Guardar exportado como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: datos-exportados
+          path: exportado.xlsx
+
       - name: Enviar archivo por email
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: ${{ secrets.SMTP_SERVER }}
-          server_port: ${{ secrets.SMTP_PORT }}
+          server_address: smtp.gmail.com
+          server_port: 587
           username: ${{ secrets.EMAIL_USER }}
           password: ${{ secrets.EMAIL_PASS }}
           subject: "Reporte automático de datos exportados"
