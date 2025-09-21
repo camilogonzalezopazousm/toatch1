@@ -48,11 +48,17 @@ def run(playwright):
     # Seleccionar día anterior
     ayer = datetime.now() - timedelta(days=1)
     dia_anterior = str(ayer.day)
-    print(f"Buscando día anterior: {dia_anterior}...")
-    page.locator(
-        f"//table[contains(@class,'ui-datepicker-calendar')]"
-        f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
-    ).first.click()
+    mes_anterior = ayer.strftime("%B")  # nombre del mes en inglés (ej: September)
+
+    print(f"Buscando día anterior: {dia_anterior} ({mes_anterior})...")
+
+    # Localizar dentro del calendario correcto (del mes actual visible)
+    dia_locator = page.locator(
+        f"//div[contains(@class,'ui-datepicker-group')][.//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{mes_anterior.lower()}')]]"
+        f"//table[contains(@class,'ui-datepicker-calendar')]//a[text()='{dia_anterior}']"
+    )
+
+    dia_locator.first.click()
     print("Día anterior seleccionado.")
 
     # ABRIR VISTA Y MARCAR CASILLA
