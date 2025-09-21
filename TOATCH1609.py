@@ -8,12 +8,12 @@ def run(playwright):
     page = context.new_page()
 
     print("1. Accediendo a la página...")
-    page.goto("https://URL-DE-TU-APP")  # <-- cámbiala por la real
+    page.goto("https://telefonica-cl.etadirect.com/")
 
     # LOGIN
     print("2. Ingreso de usuario y contraseña...")
-    page.fill("input[name='usuario']", "TU_USUARIO")
-    page.fill("input[name='password']", "TU_PASSWORD")
+    page.fill("input[name='usuario']", "TU_USUARIO")   # <-- pon tu usuario real
+    page.fill("input[name='password']", "TU_PASSWORD") # <-- pon tu password real
 
     # Checkbox "sesión activa"
     if page.locator("//input[@type='checkbox']").is_visible():
