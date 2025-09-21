@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import time
 
 def run(playwright):
-    browser = playwright.chromium.launch(headless=True)  # headless=True para ejecución sin ventana
+    browser = playwright.chromium.launch(headless=True)
     context = browser.new_context()
     page = context.new_page()
 
@@ -12,8 +12,8 @@ def run(playwright):
 
     # LOGIN
     print("2. Ingreso de usuario y contraseña...")
-    page.fill("input[name='usuario']", "22090589")       # usuario real
-    page.fill("input[name='password']", "Joaquin2012@")  # contraseña real
+    page.fill("input[name='usuario']", "TU_USUARIO")   # <-- pon tu usuario real
+    page.fill("input[name='password']", "TU_PASSWORD") # <-- pon tu password real
 
     # Checkbox "sesión activa"
     if page.locator("//input[@type='checkbox']").is_visible():
@@ -21,49 +21,48 @@ def run(playwright):
         page.check("//input[@type='checkbox']")
 
     page.click("button:has-text('Ingresar')")
+    print("🔄 Reingreso de credenciales tras alerta.")
     page.wait_for_load_state("networkidle")
-    print("✅ Login exitoso.")
+    print("Login exitoso.")
 
     # ABRIR CALENDARIO
-    print("3. Haciendo clic en la fecha actual para abrir calendario...")
+    print("4. Haciendo clic en la fecha actual para abrir calendario...")
     fecha_hoy = datetime.now().strftime("%Y/%m/%d")
 
     page.locator(
         f"//*[contains(text(), '{fecha_hoy}')]"
-    ).first.click()
+    ).nth(0).click()
     time.sleep(1)
 
     # CALCULAMOS DÍA ANTERIOR
     ayer = datetime.now() - timedelta(days=1)
     dia_anterior = str(ayer.day)
-    print(f"4. Buscando día anterior: {dia_anterior} en calendario...")
+    print(f"Buscando día anterior: {dia_anterior} en calendario...")
 
-    # Seleccionar SOLO el primer match
     page.locator(
         f"//table[contains(@class,'ui-datepicker-calendar')]"
         f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
-    ).first.click()
+    ).nth(0).click()
+    print("Día anterior seleccionado.")
 
-    print("✅ Día anterior seleccionado.")
     time.sleep(1)
 
     # CHECKBOX "Todos los datos de hijos"
-    print("5. Marcando checkbox 'Todos los datos de hijos'...")
+    print("Marcando checkbox 'Todos los datos de hijos'...")
     checkbox = page.locator("//label[contains(normalize-space(.), 'Todos los datos de hijos')]/input")
     checkbox.check()
-    print("✅ Checkbox marcado.")
+    print("Checkbox marcado.")
 
     # BOTÓN APLICAR
-    print("6. Haciendo clic en 'Aplicar'...")
+    print("Haciendo clic en 'Aplicar'...")
     aplicar_btn = page.locator("//button[normalize-space()='Aplicar']")
     aplicar_btn.click()
-    print("✅ Botón Aplicar clickeado.")
+    print("Botón Aplicar clickeado.")
 
     # Espera breve
-    time.sleep(3)
+    time.sleep(2)
 
     # Cerrar
-    print("7. Cerrando navegador...")
     context.close()
     browser.close()
 
