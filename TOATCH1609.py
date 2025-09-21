@@ -1,13 +1,6 @@
 from playwright.sync_api import sync_playwright
 from datetime import datetime, timedelta
-import os
 import time
-
-
-URL = "https://telefonica-cl.etadirect.com/"
-USUARIO = os.getenv("USUARIO_PORTAL", "22090589")
-CONTRASENA = os.getenv("PASS_PORTAL", "Joaquin2012@")
-
 
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
@@ -15,77 +8,63 @@ def run(playwright):
     page = context.new_page()
 
     print("1. Accediendo a la página...")
-    page.goto(URL)
+    page.goto("https://URL-DE-TU-APP")  # <-- cámbiala por la real
 
     # LOGIN
     print("2. Ingreso de usuario y contraseña...")
-    page.fill("//input[@placeholder='Nombre de usuario']", USUARIO)
-    page.fill("//input[@placeholder='Contraseña']", CONTRASENA)
-    page.keyboard.press("Enter")
+    page.fill("input[name='usuario']", "TU_USUARIO")
+    page.fill("input[name='password']", "TU_PASSWORD")
 
-    # Posible alerta de sesión activa
-    try:
-        page.wait_for_selector("#delsession", timeout=3000)
-        page.check("#delsession")
+    # Checkbox "sesión activa"
+    if page.locator("//input[@type='checkbox']").is_visible():
         print("✅ Checkbox de sesión activa detectado.")
+        page.check("//input[@type='checkbox']")
 
-        # Reingreso de credenciales
-        page.fill("//input[@placeholder='Nombre de usuario']", USUARIO)
-        page.fill("//input[@placeholder='Contraseña']", CONTRASENA)
-        page.keyboard.press("Enter")
-        print("🔄 Reingreso de credenciales tras alerta.")
-    except:
-        print("No se detectó alerta de sesión.")
-
-    # Esperar a que aparezca el botón Vista
-    page.wait_for_selector("//button[contains(., 'Vista')]", timeout=20000)
+    page.click("button:has-text('Ingresar')")
+    print("🔄 Reingreso de credenciales tras alerta.")
+    page.wait_for_load_state("networkidle")
     print("Login exitoso.")
 
     # ABRIR CALENDARIO
+    print("4. Haciendo clic en la fecha actual para abrir calendario...")
     fecha_hoy = datetime.now().strftime("%Y/%m/%d")
-    page.locator(f"//*[contains(text(), '{fecha_hoy}')]").first.click()
 
-    # Seleccionar día anterior
+    page.locator(
+        f"//*[contains(text(), '{fecha_hoy}')]"
+    ).nth(0).click()
+    time.sleep(1)
+
+    # CALCULAMOS DÍA ANTERIOR
     ayer = datetime.now() - timedelta(days=1)
     dia_anterior = str(ayer.day)
-    print(f"Buscando día anterior: {dia_anterior}...")
+    print(f"Buscando día anterior: {dia_anterior} en calendario...")
+
     page.locator(
         f"//table[contains(@class,'ui-datepicker-calendar')]"
         f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
-    ).first.click()
+    ).nth(0).click()
     print("Día anterior seleccionado.")
 
-    # ABRIR VISTA Y MARCAR CASILLA
-    page.locator("//button[contains(., 'Vista')]").click()
     time.sleep(1)
 
-    label_xpath = "//label[contains(normalize-space(.), 'Todos los datos de hijos')]"
-    try:
-        page.check(f"{label_xpath}//input", timeout=5000)
-        print("✅ Casilla marcada.")
-    except:
-        print("⚠️ No se pudo marcar la casilla.")
+    # CHECKBOX "Todos los datos de hijos"
+    print("Marcando checkbox 'Todos los datos de hijos'...")
+    checkbox = page.locator("//label[contains(normalize-space(.), 'Todos los datos de hijos')]/input")
+    checkbox.check()
+    print("Checkbox marcado.")
 
-    # CLIC EN APLICAR
-    try:
-        aplicar_btn = page.locator(
-            "//button[normalize-space()='Aplicar' or contains(normalize-space(.),'Aplicar')]"
-        )
-        aplicar_btn.click(timeout=3000)
-        print("✅ Cambios aplicados.")
-    except:
-        print("⚠️ No se pudo hacer clic en 'Aplicar'.")
+    # BOTÓN APLICAR
+    print("Haciendo clic en 'Aplicar'...")
+    aplicar_btn = page.locator("//button[normalize-space()='Aplicar']")
+    aplicar_btn.click()
+    print("Botón Aplicar clickeado.")
 
-    # ABRIR ACCIONES Y EXPORTAR
-    print("6️⃣ Abriendo 'Acciones' y exportando...")
-    page.locator("//button[contains(., 'Acciones')]").click()
-    page.locator("//button[contains(., 'Exportar')]").click()
-    print("✅ Datos exportados exitosamente.")
+    # Espera breve
+    time.sleep(2)
 
-    time.sleep(5)
+    # Cerrar
     context.close()
     browser.close()
-
 
 with sync_playwright() as playwright:
     run(playwright)
