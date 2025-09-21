@@ -28,7 +28,6 @@ def run(playwright):
     # ABRIR CALENDARIO
     print("4. Haciendo clic en la fecha actual para abrir calendario...")
     fecha_hoy = datetime.now().strftime("%Y/%m/%d")
-
     page.locator(
         f"//*[contains(text(), '{fecha_hoy}')]"
     ).nth(0).click()
@@ -43,24 +42,36 @@ def run(playwright):
         f"//table[contains(@class,'ui-datepicker-calendar')]"
         f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
     ).nth(0).click()
-    print("Día anterior seleccionado.")
+    print("✅ Día anterior seleccionado.")
 
     time.sleep(1)
 
     # CHECKBOX "Todos los datos de hijos"
     print("Marcando checkbox 'Todos los datos de hijos'...")
     checkbox = page.locator("//label[contains(normalize-space(.), 'Todos los datos de hijos')]/input")
-    checkbox.check()
-    print("Checkbox marcado.")
+    if not checkbox.is_checked():
+        checkbox.check()
+        print("✅ Checkbox marcado.")
+    else:
+        print("⚠️ Checkbox ya estaba marcado.")
 
     # BOTÓN APLICAR
     print("Haciendo clic en 'Aplicar'...")
     aplicar_btn = page.locator("//button[normalize-space()='Aplicar']")
     aplicar_btn.click()
-    print("Botón Aplicar clickeado.")
 
-    # Espera breve
-    time.sleep(2)
+    # Esperamos a que la página procese (red o actualización de grilla)
+    page.wait_for_load_state("networkidle")
+    print("✅ Filtro aplicado correctamente.")
+
+    # EXPORTAR (Acciones → Exportar)
+    print("6️⃣ Abriendo 'Acciones' y exportando...")
+    page.locator("//button[contains(., 'Acciones')]").click()
+    page.locator("//button[contains(., 'Exportar')]").click()
+    print("✅ Datos exportados exitosamente.")
+
+    # Espera breve para completar la descarga
+    time.sleep(3)
 
     # Cerrar
     context.close()
