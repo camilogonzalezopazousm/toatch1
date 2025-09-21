@@ -3,11 +3,25 @@ from datetime import datetime, timedelta
 import os
 import time
 
-
 URL = "https://telefonica-cl.etadirect.com/"
 USUARIO = os.getenv("USUARIO_PORTAL", "22090589")
 CONTRASENA = os.getenv("PASS_PORTAL", "Joaquin2012@")
 
+# Traducción meses inglés → español tal como los muestra el calendario
+MESES_ES = {
+    "January": "Enero",
+    "February": "Febrero",
+    "March": "Marzo",
+    "April": "Abril",
+    "May": "Mayo",
+    "June": "Junio",
+    "July": "Julio",
+    "August": "Agosto",
+    "September": "Septiembre",
+    "October": "Octubre",
+    "November": "Noviembre",
+    "December": "Diciembre",
+}
 
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
@@ -48,13 +62,14 @@ def run(playwright):
     # Seleccionar día anterior
     ayer = datetime.now() - timedelta(days=1)
     dia_anterior = str(ayer.day)
-    mes_anterior = ayer.strftime("%B")  # nombre del mes en inglés (ej: September)
+    mes_en = ayer.strftime("%B")        # ej: "September"
+    mes_es = MESES_ES[mes_en]           # "Septiembre"
 
-    print(f"Buscando día anterior: {dia_anterior} ({mes_anterior})...")
+    print(f"Buscando día anterior: {dia_anterior} ({mes_es})...")
 
-    # Localizar dentro del calendario correcto (del mes actual visible)
+    # Localizar dentro del mes correcto (insensible a mayúsculas)
     dia_locator = page.locator(
-        f"//div[contains(@class,'ui-datepicker-group')][.//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{mes_anterior.lower()}')]]"
+        f"//div[contains(@class,'ui-datepicker-group')][.//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÜ', 'abcdefghijklmnopqrstuvwxyzáéíóúü'), '{mes_es.lower()}')]]"
         f"//table[contains(@class,'ui-datepicker-calendar')]//a[text()='{dia_anterior}']"
     )
 
@@ -62,7 +77,7 @@ def run(playwright):
     print("Día anterior seleccionado.")
 
     # ABRIR VISTA Y MARCAR CASILLA
-    page.locator("//button[contains(., 'Vista')]").click()
+    page.locator("//button[contains(., 'Vista')]").first.click()
     time.sleep(1)
 
     label_xpath = "//label[contains(normalize-space(.), 'Todos los datos de hijos')]"
@@ -91,7 +106,6 @@ def run(playwright):
     time.sleep(5)
     context.close()
     browser.close()
-
 
 with sync_playwright() as playwright:
     run(playwright)
