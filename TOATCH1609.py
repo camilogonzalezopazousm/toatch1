@@ -12,8 +12,8 @@ def run(playwright):
 
     # LOGIN
     print("2. Ingreso de usuario y contraseña...")
-    page.fill("input[name='usuario']", "TU_USUARIO")   # <-- pon tu usuario real
-    page.fill("input[name='password']", "TU_PASSWORD") # <-- pon tu password real
+    page.fill("input[name='usuario']", "22090589")      # usuario real
+    page.fill("input[name='password']", "Joaquin2012@") # contraseña real
 
     # Checkbox "sesión activa"
     if page.locator("//input[@type='checkbox']").is_visible():
@@ -40,42 +40,4 @@ def run(playwright):
 
     page.locator(
         f"//table[contains(@class,'ui-datepicker-calendar')]"
-        f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
-    ).nth(0).click()
-    print("✅ Día anterior seleccionado.")
-
-    time.sleep(1)
-
-    # CHECKBOX "Todos los datos de hijos"
-    print("Marcando checkbox 'Todos los datos de hijos'...")
-    checkbox = page.locator("//label[contains(normalize-space(.), 'Todos los datos de hijos')]/input")
-    if not checkbox.is_checked():
-        checkbox.check()
-        print("✅ Checkbox marcado.")
-    else:
-        print("⚠️ Checkbox ya estaba marcado.")
-
-    # BOTÓN APLICAR
-    print("Haciendo clic en 'Aplicar'...")
-    aplicar_btn = page.locator("//button[normalize-space()='Aplicar']")
-    aplicar_btn.click()
-
-    # Esperamos a que la página procese (red o actualización de grilla)
-    page.wait_for_load_state("networkidle")
-    print("✅ Filtro aplicado correctamente.")
-
-    # EXPORTAR (Acciones → Exportar)
-    print("6️⃣ Abriendo 'Acciones' y exportando...")
-    page.locator("//button[contains(., 'Acciones')]").click()
-    page.locator("//button[contains(., 'Exportar')]").click()
-    print("✅ Datos exportados exitosamente.")
-
-    # Espera breve para completar la descarga
-    time.sleep(3)
-
-    # Cerrar
-    context.close()
-    browser.close()
-
-with sync_playwright() as playwright:
-    run(playwright)
+        f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()]()
