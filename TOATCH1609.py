@@ -43,7 +43,7 @@ def run(playwright):
 
     # ABRIR CALENDARIO
     fecha_hoy = datetime.now().strftime("%Y/%m/%d")
-    page.locator(f"//*[contains(text(), '{fecha_hoy}')]").click()
+    page.locator(f"//*[contains(text(), '{fecha_hoy}')]").first.click()
 
     # Seleccionar día anterior
     ayer = datetime.now() - timedelta(days=1)
