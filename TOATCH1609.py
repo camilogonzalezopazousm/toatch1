@@ -39,4 +39,53 @@ def run(playwright):
 
     # Esperar a que aparezca el botón Vista
     page.wait_for_selector("//button[contains(., 'Vista')]", timeout=20000)
-    print("Login exito
+    print("Login exitoso.")
+
+    # ABRIR CALENDARIO
+    fecha_hoy = datetime.now().strftime("%Y/%m/%d")
+    page.locator(f"//*[contains(text(), '{fecha_hoy}')]").click()
+
+    # Seleccionar día anterior
+    ayer = datetime.now() - timedelta(days=1)
+    dia_anterior = str(ayer.day)
+    print(f"Buscando día anterior: {dia_anterior}...")
+    page.locator(
+        f"//table[contains(@class,'ui-datepicker-calendar')]"
+        f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
+    ).click()
+    print("Día anterior seleccionado.")
+
+    # ABRIR VISTA Y MARCAR CASILLA
+    page.locator("//button[contains(., 'Vista')]").click()
+    time.sleep(1)
+
+    label_xpath = "//label[contains(normalize-space(.), 'Todos los datos de hijos')]"
+    try:
+        page.check(f"{label_xpath}//input", timeout=5000)
+        print("✅ Casilla marcada.")
+    except:
+        print("⚠️ No se pudo marcar la casilla.")
+
+    # CLIC EN APLICAR
+    try:
+        aplicar_btn = page.locator(
+            "//button[normalize-space()='Aplicar' or contains(normalize-space(.),'Aplicar')]"
+        )
+        aplicar_btn.click(timeout=3000)
+        print("✅ Cambios aplicados.")
+    except:
+        print("⚠️ No se pudo hacer clic en 'Aplicar'.")
+
+    # ABRIR ACCIONES Y EXPORTAR
+    print("6️⃣ Abriendo 'Acciones' y exportando...")
+    page.locator("//button[contains(., 'Acciones')]").click()
+    page.locator("//button[contains(., 'Exportar')]").click()
+    print("✅ Datos exportados exitosamente.")
+
+    time.sleep(5)
+    context.close()
+    browser.close()
+
+
+with sync_playwright() as playwright:
+    run(playwright)
