@@ -29,9 +29,21 @@ jobs:
           PASS_PORTAL: ${{ secrets.PASS_PORTAL }}
         run: python TOATCH1609.py
 
-      - name: Guardar exportado como artifact
-        uses: actions/upload-artifact@v4
+      - name: Enviar archivo por email
+        uses: dawidd6/action-send-mail@v3
         with:
-          name: datos-exportados
-          path: exportado.xlsx
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.EMAIL_USER }}
+          password: ${{ secrets.EMAIL_PASS }}
+          subject: "Reporte automático de datos exportados"
+          to: selfgeneratedcamillogonzalez@gmail.com
+          from: "Exportador BOT <${{ secrets.EMAIL_USER }}>"
+          body: |
+            Hola Camilo 👋
 
+            Te envío en adjunto el reporte exportado automáticamente desde el portal.
+
+            Saludos,
+            BOT Exportador
+          attachments: exportado.xlsx
