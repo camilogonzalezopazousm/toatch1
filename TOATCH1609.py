@@ -52,7 +52,7 @@ def run(playwright):
     page.locator(
         f"//table[contains(@class,'ui-datepicker-calendar')]"
         f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
-    ).click()
+    ).first.click()
     print("Día anterior seleccionado.")
 
     # ABRIR VISTA Y MARCAR CASILLA
