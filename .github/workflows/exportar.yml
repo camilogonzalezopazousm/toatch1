@@ -3,7 +3,7 @@ name: Exportar Datos
 on:
   workflow_dispatch:  # ejecución manual
   schedule:
-    - cron: "0 7 * * *"  # todos los días a las 08:00 UTC (05:00 Chile)
+    - cron: "0 6 * * *"  # todos los días a las 08:00 UTC (05:00 Chile)
 
 jobs:
   exportar:
