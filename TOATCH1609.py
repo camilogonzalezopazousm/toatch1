@@ -76,16 +76,21 @@ def run(playwright):
     except:
         print("⚠️ No se pudo hacer clic en 'Aplicar'.")
 
-      # ABRIR ACCIONES Y EXPORTAR
+    # ABRIR ACCIONES Y EXPORTAR
     print("6️⃣ Abriendo 'Acciones' y exportando...")
-    page.locator("//button[contains(., 'Acciones')]").click()
-    page.locator("//button[contains(., 'Exportar')]").click()
-    print("✅ Datos exportados exitosamente.")
+
+    with page.expect_download() as download_info:
+        page.locator("//button[contains(., 'Acciones')]").click()
+        page.locator("//button[contains(., 'Exportar')]").click()
+
+    download = download_info.value
+    final_path = os.path.join(os.getcwd(), "exportado.xlsx")
+    download.save_as(final_path)
+    print(f"✅ Datos exportados exitosamente: {final_path}")
 
     time.sleep(5)
     context.close()
     browser.close()
-
 
 
 with sync_playwright() as playwright:
