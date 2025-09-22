@@ -84,8 +84,12 @@ def run(playwright):
         page.locator("//button[contains(., 'Exportar')]").click()
 
     download = download_info.value
-    final_path = os.path.join(os.getcwd(), "exportado.xlsx")
+
+    # ✅ Mantener el nombre original del archivo descargado
+    nombre_archivo = download.suggested_filename
+    final_path = os.path.join(os.getcwd(), nombre_archivo)
     download.save_as(final_path)
+
     print(f"✅ Datos exportados exitosamente: {final_path}")
 
     time.sleep(5)
