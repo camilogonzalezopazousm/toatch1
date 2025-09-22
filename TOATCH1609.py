@@ -7,25 +7,10 @@ URL = "https://telefonica-cl.etadirect.com/"
 USUARIO = os.getenv("USUARIO_PORTAL", "22090589")
 CONTRASENA = os.getenv("PASS_PORTAL", "Joaquin2012@")
 
-# Traducción meses inglés → español tal como los muestra el calendario
-MESES_ES = {
-    "January": "Enero",
-    "February": "Febrero",
-    "March": "Marzo",
-    "April": "Abril",
-    "May": "Mayo",
-    "June": "Junio",
-    "July": "Julio",
-    "August": "Agosto",
-    "September": "Septiembre",
-    "October": "Octubre",
-    "November": "Noviembre",
-    "December": "Diciembre",
-}
 
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
-    context = browser.new_context()
+    context = browser.new_context(accept_downloads=True)  # ✅ Permitir descargas
     page = context.new_page()
 
     print("1. Accediendo a la página...")
@@ -62,17 +47,11 @@ def run(playwright):
     # Seleccionar día anterior
     ayer = datetime.now() - timedelta(days=1)
     dia_anterior = str(ayer.day)
-    mes_en = ayer.strftime("%B")        # ej: "September"
-    mes_es = MESES_ES[mes_en]           # "Septiembre"
-
-    print(f"Buscando día anterior: {dia_anterior} ({mes_es})...")
-
-    # Localizar dentro del mes correcto (insensible a mayúsculas)
+    print(f"Buscando día anterior: {dia_anterior}...")
     dia_locator = page.locator(
-        f"//div[contains(@class,'ui-datepicker-group')][.//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÜ', 'abcdefghijklmnopqrstuvwxyzáéíóúü'), '{mes_es.lower()}')]]"
-        f"//table[contains(@class,'ui-datepicker-calendar')]//a[text()='{dia_anterior}']"
+        f"//table[contains(@class,'ui-datepicker-calendar')]"
+        f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
     )
-
     dia_locator.first.click()
     print("Día anterior seleccionado.")
 
@@ -99,13 +78,20 @@ def run(playwright):
 
     # ABRIR ACCIONES Y EXPORTAR
     print("6️⃣ Abriendo 'Acciones' y exportando...")
-    page.locator("//button[contains(., 'Acciones')]").click()
-    page.locator("//button[contains(., 'Exportar')]").click()
-    print("✅ Datos exportados exitosamente.")
+
+    with page.expect_download() as download_info:
+        page.locator("//button[contains(., 'Acciones')]").click()
+        page.locator("//button[contains(., 'Exportar')]").click()
+
+    download = download_info.value
+    final_path = os.path.join(os.getcwd(), "exportado.xlsx")
+    download.save_as(final_path)
+    print(f"✅ Datos exportados exitosamente: {final_path}")
 
     time.sleep(5)
     context.close()
     browser.close()
+
 
 with sync_playwright() as playwright:
     run(playwright)
