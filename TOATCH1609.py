@@ -2,7 +2,10 @@ from playwright.sync_api import sync_playwright
 from datetime import datetime, timedelta
 import os
 import time
+import locale
 
+# Para asegurar nombres de meses en español
+locale.setlocale(locale.LC_TIME, "es_ES.utf8")
 
 URL = "https://telefonica-cl.etadirect.com/"
 USUARIO = os.getenv("USUARIO_PORTAL", "22090589")
@@ -46,17 +49,15 @@ def run(playwright):
     # =========================
     hoy = datetime.now()
     ayer = hoy - timedelta(days=1)
+
     dia_ayer = str(ayer.day)
-    mes_ayer = ayer.strftime("%B").lower()  # ejemplo: september / septiembre
+    mes_ayer = ayer.strftime("%B")  # "Septiembre", "Octubre"...
 
     print(f"Buscando día anterior: {dia_ayer} ({mes_ayer})...")
 
-    # 👉 Abrir calendario haciendo clic en el input o ícono
-    page.click("//input[contains(@class,'hasDatepicker') or contains(@id,'date')]")
-
-    # 👉 Buscar el día anterior dentro del mes correcto
+    # 👉 Buscar el día anterior en el mes correcto
     dia_locator = page.locator(
-        f"//div[contains(@class,'ui-datepicker-group')][.//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{mes_ayer}')]]"
+        f"//div[contains(@class,'ui-datepicker-group')][.//span[contains(text(), '{mes_ayer}')]]"
         f"//table[contains(@class,'ui-datepicker-calendar')]//a[normalize-space(text())='{dia_ayer}']"
     )
 
