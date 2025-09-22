@@ -76,6 +76,7 @@ def run(playwright):
     except:
         print("⚠️ No se pudo hacer clic en 'Aplicar'.")
 
+
     # ABRIR ACCIONES Y EXPORTAR
     print("6️⃣ Abriendo 'Acciones' y exportando...")
 
