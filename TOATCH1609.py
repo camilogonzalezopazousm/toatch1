@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import os
 import time
 
+
 URL = "https://telefonica-cl.etadirect.com/"
 USUARIO = os.getenv("USUARIO_PORTAL", "22090589")
 CONTRASENA = os.getenv("PASS_PORTAL", "Joaquin2012@")
@@ -10,7 +11,7 @@ CONTRASENA = os.getenv("PASS_PORTAL", "Joaquin2012@")
 
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
-    context = browser.new_context(accept_downloads=True)  # ✅ Permitir descargas
+    context = browser.new_context(accept_downloads=True)
     page = context.new_page()
 
     print("1. Accediendo a la página...")
@@ -36,27 +37,34 @@ def run(playwright):
     except:
         print("No se detectó alerta de sesión.")
 
-    # Esperar a que aparezca el botón Vista
+    # Esperar a que aparezca el botón Vista (confirmación login)
     page.wait_for_selector("//button[contains(., 'Vista')]", timeout=20000)
     print("Login exitoso.")
 
-    # ABRIR CALENDARIO
-    fecha_hoy = datetime.now().strftime("%Y/%m/%d")
-    page.locator(f"//*[contains(text(), '{fecha_hoy}')]").first.click()
+    # =========================
+    # 📅 Selección de fecha
+    # =========================
+    hoy = datetime.now()
+    ayer = hoy - timedelta(days=1)
+    dia_ayer = str(ayer.day)
+    mes_ayer = ayer.strftime("%B").lower()  # ejemplo: september / septiembre
 
-    # Seleccionar día anterior
-    ayer = datetime.now() - timedelta(days=1)
-    dia_anterior = str(ayer.day)
-    print(f"Buscando día anterior: {dia_anterior}...")
+    print(f"Buscando día anterior: {dia_ayer} ({mes_ayer})...")
+
+    # 👉 Abrir calendario haciendo clic en el input o ícono
+    page.click("//input[contains(@class,'hasDatepicker') or contains(@id,'date')]")
+
+    # 👉 Buscar el día anterior dentro del mes correcto
     dia_locator = page.locator(
-        f"//table[contains(@class,'ui-datepicker-calendar')]"
-        f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
+        f"//div[contains(@class,'ui-datepicker-group')][.//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), '{mes_ayer}')]]"
+        f"//table[contains(@class,'ui-datepicker-calendar')]//a[normalize-space(text())='{dia_ayer}']"
     )
+
     dia_locator.first.click()
-    print("Día anterior seleccionado.")
+    print("✅ Día anterior seleccionado.")
 
     # ABRIR VISTA Y MARCAR CASILLA
-    page.locator("//button[contains(., 'Vista')]").first.click()
+    page.locator("//button[contains(., 'Vista')]").click()
     time.sleep(1)
 
     label_xpath = "//label[contains(normalize-space(.), 'Todos los datos de hijos')]"
@@ -78,17 +86,15 @@ def run(playwright):
 
     # ABRIR ACCIONES Y EXPORTAR
     print("6️⃣ Abriendo 'Acciones' y exportando...")
-
     with page.expect_download() as download_info:
         page.locator("//button[contains(., 'Acciones')]").click()
         page.locator("//button[contains(., 'Exportar')]").click()
 
     download = download_info.value
-    final_path = os.path.join(os.getcwd(), "exportado.xlsx")
-    download.save_as(final_path)
-    print(f"✅ Datos exportados exitosamente: {final_path}")
+    download.save_as("exportado.xlsx")
+    print("✅ Datos exportados exitosamente.")
 
-    time.sleep(5)
+    time.sleep(3)
     context.close()
     browser.close()
 
