@@ -33,7 +33,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: datos-exportados
-          path: "*.xlsx"   # ✅ Captura cualquier archivo Excel descargado
+          path: exportado.xlsx
 
       - name: Enviar archivo por email
         uses: dawidd6/action-send-mail@v3
@@ -50,6 +50,6 @@ jobs:
 
             Te envío en adjunto el reporte exportado automáticamente desde el portal.
 
-            Saludos,  
+            Saludos,
             BOT Exportador
-          attachments: "*.xlsx"   # ✅ Envia cualquier archivo Excel descargado
+          attachments: exportado.xlsx
