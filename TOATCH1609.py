@@ -2,10 +2,22 @@ from playwright.sync_api import sync_playwright
 from datetime import datetime, timedelta
 import os
 import time
-import locale
 
-# Para asegurar nombres de meses en español
-locale.setlocale(locale.LC_TIME, "es_ES.utf8")
+# Diccionario de meses en español (con inicial mayúscula como en tu captura)
+MESES_ES = {
+    1: "Enero",
+    2: "Febrero",
+    3: "Marzo",
+    4: "Abril",
+    5: "Mayo",
+    6: "Junio",
+    7: "Julio",
+    8: "Agosto",
+    9: "Septiembre",
+    10: "Octubre",
+    11: "Noviembre",
+    12: "Diciembre"
+}
 
 URL = "https://telefonica-cl.etadirect.com/"
 USUARIO = os.getenv("USUARIO_PORTAL", "22090589")
@@ -51,7 +63,7 @@ def run(playwright):
     ayer = hoy - timedelta(days=1)
 
     dia_ayer = str(ayer.day)
-    mes_ayer = ayer.strftime("%B")  # "Septiembre", "Octubre"...
+    mes_ayer = MESES_ES[ayer.month]  # Ejemplo: "Septiembre"
 
     print(f"Buscando día anterior: {dia_ayer} ({mes_ayer})...")
 
