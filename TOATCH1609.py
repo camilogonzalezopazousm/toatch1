@@ -76,17 +76,26 @@ def run(playwright):
     except:
         print("⚠️ No se pudo hacer clic en 'Aplicar'.")
 
-    # ABRIR ACCIONES Y EXPORTAR
-    print("6️⃣ Abriendo 'Acciones' y exportando...")
+   # ABRIR ACCIONES Y EXPORTAR
+print("6️⃣ Abriendo 'Acciones' y exportando...")
+page.locator("//button[contains(., 'Acciones')]").click()
 
-    with page.expect_download() as download_info:
-        page.locator("//button[contains(., 'Acciones')]").click()
-        page.locator("//button[contains(., 'Exportar')]").click()
+with page.expect_download() as download_info:
+    page.locator("//button[contains(., 'Exportar')]").click()
+download = download_info.value
 
-    download = download_info.value
-    final_path = os.path.join(os.getcwd(), "exportado.xlsx")
-    download.save_as(final_path)
-    print(f"✅ Datos exportados exitosamente: {final_path}")
+# Obtiene el nombre original que entrega el portal
+nombre_archivo = download.suggested_filename
+print(f"📂 Archivo descargado: {nombre_archivo}")
+
+# Guardar con el nombre original
+download.save_as(nombre_archivo)
+print("✅ Datos exportados exitosamente.")
+
+time.sleep(5)
+context.close()
+browser.close()
+
 
     time.sleep(5)
     context.close()
