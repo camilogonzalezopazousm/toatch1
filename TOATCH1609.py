@@ -97,10 +97,6 @@ context.close()
 browser.close()
 
 
-    time.sleep(5)
-    context.close()
-    browser.close()
-
 
 with sync_playwright() as playwright:
     run(playwright)
