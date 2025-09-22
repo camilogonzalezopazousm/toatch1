@@ -3,30 +3,29 @@ from datetime import datetime, timedelta
 import os
 import time
 
-# Diccionario de meses en español (con inicial mayúscula como en tu captura)
-MESES_ES = {
-    1: "Enero",
-    2: "Febrero",
-    3: "Marzo",
-    4: "Abril",
-    5: "Mayo",
-    6: "Junio",
-    7: "Julio",
-    8: "Agosto",
-    9: "Septiembre",
-    10: "Octubre",
-    11: "Noviembre",
-    12: "Diciembre"
-}
-
 URL = "https://telefonica-cl.etadirect.com/"
 USUARIO = os.getenv("USUARIO_PORTAL", "22090589")
 CONTRASENA = os.getenv("PASS_PORTAL", "Joaquin2012@")
 
+# Traducción meses inglés → español tal como los muestra el calendario
+MESES_ES = {
+    "January": "Enero",
+    "February": "Febrero",
+    "March": "Marzo",
+    "April": "Abril",
+    "May": "Mayo",
+    "June": "Junio",
+    "July": "Julio",
+    "August": "Agosto",
+    "September": "Septiembre",
+    "October": "Octubre",
+    "November": "Noviembre",
+    "December": "Diciembre",
+}
 
 def run(playwright):
     browser = playwright.chromium.launch(headless=True)
-    context = browser.new_context(accept_downloads=True)
+    context = browser.new_context()
     page = context.new_page()
 
     print("1. Accediendo a la página...")
@@ -52,32 +51,33 @@ def run(playwright):
     except:
         print("No se detectó alerta de sesión.")
 
-    # Esperar a que aparezca el botón Vista (confirmación login)
+    # Esperar a que aparezca el botón Vista
     page.wait_for_selector("//button[contains(., 'Vista')]", timeout=20000)
     print("Login exitoso.")
 
-    # =========================
-    # 📅 Selección de fecha
-    # =========================
-    hoy = datetime.now()
-    ayer = hoy - timedelta(days=1)
+    # ABRIR CALENDARIO
+    fecha_hoy = datetime.now().strftime("%Y/%m/%d")
+    page.locator(f"//*[contains(text(), '{fecha_hoy}')]").first.click()
 
-    dia_ayer = str(ayer.day)
-    mes_ayer = MESES_ES[ayer.month]  # Ejemplo: "Septiembre"
+    # Seleccionar día anterior
+    ayer = datetime.now() - timedelta(days=1)
+    dia_anterior = str(ayer.day)
+    mes_en = ayer.strftime("%B")        # ej: "September"
+    mes_es = MESES_ES[mes_en]           # "Septiembre"
 
-    print(f"Buscando día anterior: {dia_ayer} ({mes_ayer})...")
+    print(f"Buscando día anterior: {dia_anterior} ({mes_es})...")
 
-    # 👉 Buscar el día anterior en el mes correcto
+    # Localizar dentro del mes correcto (insensible a mayúsculas)
     dia_locator = page.locator(
-        f"//div[contains(@class,'ui-datepicker-group')][.//span[contains(text(), '{mes_ayer}')]]"
-        f"//table[contains(@class,'ui-datepicker-calendar')]//a[normalize-space(text())='{dia_ayer}']"
+        f"//div[contains(@class,'ui-datepicker-group')][.//span[contains(translate(., 'ABCDEFGHIJKLMNOPQRSTUVWXYZÁÉÍÓÚÜ', 'abcdefghijklmnopqrstuvwxyzáéíóúü'), '{mes_es.lower()}')]]"
+        f"//table[contains(@class,'ui-datepicker-calendar')]//a[text()='{dia_anterior}']"
     )
 
     dia_locator.first.click()
-    print("✅ Día anterior seleccionado.")
+    print("Día anterior seleccionado.")
 
     # ABRIR VISTA Y MARCAR CASILLA
-    page.locator("//button[contains(., 'Vista')]").click()
+    page.locator("//button[contains(., 'Vista')]").first.click()
     time.sleep(1)
 
     label_xpath = "//label[contains(normalize-space(.), 'Todos los datos de hijos')]"
@@ -99,18 +99,13 @@ def run(playwright):
 
     # ABRIR ACCIONES Y EXPORTAR
     print("6️⃣ Abriendo 'Acciones' y exportando...")
-    with page.expect_download() as download_info:
-        page.locator("//button[contains(., 'Acciones')]").click()
-        page.locator("//button[contains(., 'Exportar')]").click()
-
-    download = download_info.value
-    download.save_as("exportado.xlsx")
+    page.locator("//button[contains(., 'Acciones')]").click()
+    page.locator("//button[contains(., 'Exportar')]").click()
     print("✅ Datos exportados exitosamente.")
 
-    time.sleep(3)
+    time.sleep(5)
     context.close()
     browser.close()
-
 
 with sync_playwright() as playwright:
     run(playwright)
