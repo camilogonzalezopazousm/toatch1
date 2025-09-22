@@ -1,101 +1,97 @@
+from playwright.sync_api import sync_playwright
+from datetime import datetime, timedelta
 import os
 import time
-from datetime import datetime, timedelta
-from playwright.sync_api import sync_playwright
 
-# Diccionario de meses en español con mayúscula inicial
-MESES_ES = {
-    1: "Enero",
-    2: "Febrero",
-    3: "Marzo",
-    4: "Abril",
-    5: "Mayo",
-    6: "Junio",
-    7: "Julio",
-    8: "Agosto",
-    9: "Septiembre",
-    10: "Octubre",
-    11: "Noviembre",
-    12: "Diciembre",
-}
-
-# Credenciales desde variables de entorno
+URL = "https://telefonica-cl.etadirect.com/"
 USUARIO = os.getenv("USUARIO_PORTAL", "22090589")
-PASSWORD = os.getenv("PASS_PORTAL", "Joaquin2012@")
+CONTRASENA = os.getenv("PASS_PORTAL", "Joaquin2012@")
 
-# Carpeta de descargas
-DOWNLOAD_DIR = os.path.join(os.getcwd(), "descargas")
-os.makedirs(DOWNLOAD_DIR, exist_ok=True)
 
 def run(playwright):
-    print("1. Accediendo a la página...")
     browser = playwright.chromium.launch(headless=True)
-    context = browser.new_context(accept_downloads=True)
+    context = browser.new_context(accept_downloads=True)  # ✅ Permitir descargas
     page = context.new_page()
 
-    page.goto("https://srienlinea.sii.cl/")
+    print("1. Accediendo a la página...")
+    page.goto(URL)
 
-    # Login
+    # LOGIN
     print("2. Ingreso de usuario y contraseña...")
-    page.fill('input[name="rutcntr"]', USUARIO)
-    page.fill('input[name="clave"]', PASSWORD)
-    page.click('input[type="submit"]')
+    page.fill("//input[@placeholder='Nombre de usuario']", USUARIO)
+    page.fill("//input[@placeholder='Contraseña']", CONTRASENA)
+    page.keyboard.press("Enter")
 
-    # Checkbox sesión activa
+    # Posible alerta de sesión activa
     try:
-        checkbox = page.locator("text=No cerrar sesión automáticamente")
-        if checkbox.is_visible():
-            checkbox.check()
-            print("✅ Checkbox de sesión activa detectado.")
-    except:
-        pass
+        page.wait_for_selector("#delsession", timeout=3000)
+        page.check("#delsession")
+        print("✅ Checkbox de sesión activa detectado.")
 
-    # Si pide reingresar credenciales
-    if page.locator("text=Ingrese nuevamente sus credenciales").is_visible():
+        # Reingreso de credenciales
+        page.fill("//input[@placeholder='Nombre de usuario']", USUARIO)
+        page.fill("//input[@placeholder='Contraseña']", CONTRASENA)
+        page.keyboard.press("Enter")
         print("🔄 Reingreso de credenciales tras alerta.")
-        page.fill('input[name="rutcntr"]', USUARIO)
-        page.fill('input[name="clave"]', PASSWORD)
-        page.click('input[type="submit"]')
+    except:
+        print("No se detectó alerta de sesión.")
 
+    # Esperar a que aparezca el botón Vista
+    page.wait_for_selector("//button[contains(., 'Vista')]", timeout=20000)
     print("Login exitoso.")
 
-    # Calcular día anterior
-    hoy = datetime.now()
-    ayer = hoy - timedelta(days=1)
+    # ABRIR CALENDARIO
+    fecha_hoy = datetime.now().strftime("%Y/%m/%d")
+    page.locator(f"//*[contains(text(), '{fecha_hoy}')]").first.click()
 
-    dia = ayer.day
-    mes_actual = MESES_ES[ayer.month]
-    mes_anterior = MESES_ES[(ayer.month - 1) if ayer.month > 1 else 12]
+    # Seleccionar día anterior
+    ayer = datetime.now() - timedelta(days=1)
+    dia_anterior = str(ayer.day)
+    print(f"Buscando día anterior: {dia_anterior}...")
+    dia_locator = page.locator(
+        f"//table[contains(@class,'ui-datepicker-calendar')]"
+        f"//td[not(contains(@class,'ui-datepicker-other-month'))]/a[text()='{dia_anterior}']"
+    )
+    dia_locator.first.click()
+    print("Día anterior seleccionado.")
 
-    fecha_buscar = f"{dia} {mes_actual}"
-    fecha_alternativa = f"{dia} {mes_anterior}"
+    # ABRIR VISTA Y MARCAR CASILLA
+    page.locator("//button[contains(., 'Vista')]").first.click()
+    time.sleep(1)
 
-    print(f"📅 Buscando día anterior: {fecha_buscar} (fallback: {fecha_alternativa})...")
-
-    # Intentar hacer clic en el calendario
+    label_xpath = "//label[contains(normalize-space(.), 'Todos los datos de hijos')]"
     try:
-        page.click(f"//*[contains(text(), '{fecha_buscar}')]")
-        print(f"✅ Fecha encontrada: {fecha_buscar}")
+        page.check(f"{label_xpath}//input", timeout=5000)
+        print("✅ Casilla marcada.")
     except:
-        print(f"⚠️ No se encontró {fecha_buscar}, probando con {fecha_alternativa}...")
-        page.click(f"//*[contains(text(), '{fecha_alternativa}')]")
-        print(f"✅ Fecha alternativa encontrada: {fecha_alternativa}")
+        print("⚠️ No se pudo marcar la casilla.")
 
-    # Botón exportar
-    page.click("text=Exportar")
+    # CLIC EN APLICAR
+    try:
+        aplicar_btn = page.locator(
+            "//button[normalize-space()='Aplicar' or contains(normalize-space(.),'Aplicar')]"
+        )
+        aplicar_btn.click(timeout=3000)
+        print("✅ Cambios aplicados.")
+    except:
+        print("⚠️ No se pudo hacer clic en 'Aplicar'.")
 
-    # Esperar descarga
+    # ABRIR ACCIONES Y EXPORTAR
+    print("6️⃣ Abriendo 'Acciones' y exportando...")
+
     with page.expect_download() as download_info:
-        page.click("text=Exportar a Excel")
+        page.locator("//button[contains(., 'Acciones')]").click()
+        page.locator("//button[contains(., 'Exportar')]").click()
+
     download = download_info.value
-    ruta_final = os.path.join(DOWNLOAD_DIR, "exportado.xlsx")
-    download.save_as(ruta_final)
+    final_path = os.path.join(os.getcwd(), "exportado.xlsx")
+    download.save_as(final_path)
+    print(f"✅ Datos exportados exitosamente: {final_path}")
 
-    print(f"📂 Archivo exportado: {ruta_final}")
-
+    time.sleep(5)
     context.close()
     browser.close()
 
-if __name__ == "__main__":
-    with sync_playwright() as playwright:
-        run(playwright)
+
+with sync_playwright() as playwright:
+    run(playwright)
